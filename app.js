@@ -7,7 +7,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.get('/', (req, res) => {
-    res.send('Welcome to the Local Services Project.');
+    res.send("<h1>Welcome to the local services project </h1>");
+})
+
+app.get('/api', (req, res) => {
+    res.send('Welcome');
 })
 
 app.listen(PORT, ()=>{
