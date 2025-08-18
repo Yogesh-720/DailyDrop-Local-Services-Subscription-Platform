@@ -5,7 +5,12 @@ const AddressSchema = new mongoose.Schema({
     line1: { type: String, required: true },
     locality: { type: String },
     city: { type: String, required: true },
-    pincode: { type: String, required: true }
+    state: { type: String },
+    pincode: {
+        type: String,
+        required: true,
+        match: [/^\d{6}$/, 'Please enter a valid 6-digit pincode.']
+    }
 }, { _id: false });
 
 const UserSchema = new mongoose.Schema({
@@ -35,12 +40,13 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: [true, 'UserPassword is required.'],
         minlength: 6,
+        select: false // prevent accidental exposure
     },
     addresses: [AddressSchema],
     notificationPrefs: {
         email: { type: Boolean, default: true },
         sms: { type: Boolean, default: false },
-        reminderDays: { type: [Number], default: [7, 3] }
+        reminderDays: { type: [Number], default: [7, 3, 1] }
     },
     role: {
         type: String,
@@ -50,4 +56,3 @@ const UserSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 export const User = mongoose.model('User', UserSchema);
-
