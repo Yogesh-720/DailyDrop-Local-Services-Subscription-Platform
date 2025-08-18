@@ -25,7 +25,7 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: [true, 'UserEmail is required.'],
         trim: true,
-        unique: true,
+        sparse: true,
         lowercase: true,
         match: [/\S+@\S+\.\S+/, 'Please enter a valid email address.'],
     },
@@ -54,5 +54,14 @@ const UserSchema = new mongoose.Schema({
         default: 'user'
     }
 }, { timestamps: true });
+
+UserSchema.pre("validate", function (next) {
+    if (!this.email && !this.phone) {
+        next(new Error("Either email or phone is required"));
+    } else {
+        next();
+    }
+});
+
 
 export const User = mongoose.model('User', UserSchema);
