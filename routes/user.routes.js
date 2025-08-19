@@ -5,7 +5,7 @@ import {
     getAllUsers,
     getUserById,
     updateUserById,
-    deleteUserById
+    deleteUserById, deleteMe
 } from "../controllers/user.controller.js";
 import { authorize, authorizeAdmin } from "../middlewares/auth.middleware.js";
 
@@ -18,6 +18,9 @@ userRouter.get("/me", authorize, getMe);
 
 // PATCH /api/v1/users/me → update own profile
 userRouter.patch("/me", authorize, updateMe);
+
+// DELETE /api/v1/users/me → delete own account
+userRouter.delete("/me", authorize, deleteMe);
 
 
 // ------------------- Admin Routes ------------------- //

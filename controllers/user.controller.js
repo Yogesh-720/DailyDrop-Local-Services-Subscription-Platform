@@ -10,7 +10,6 @@ export const getMe = async (req, res, next) => {
             err.statusCode = 404;
             throw err;
         }
-
         res.status(200).json({
             success: true,
             data: user,
@@ -47,6 +46,27 @@ export const updateMe = async (req, res, next) => {
             success: true,
             message: "Profile updated successfully",
             data: user,
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @access  Private (logged-in user)
+export const deleteMe = async (req, res, next) => {
+    try {
+        // req.user.id JWT ke payload se aa raha hai (auth.middleware)
+        const user = await User.findByIdAndDelete(req.user.id);
+
+        if (!user) {
+            const err = new Error("User not found");
+            err.statusCode = 404;
+            throw err;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Your account has been deleted successfully",
         });
     } catch (err) {
         next(err);
