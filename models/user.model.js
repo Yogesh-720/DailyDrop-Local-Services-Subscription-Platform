@@ -41,7 +41,7 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: [true, 'UserPassword is required.'],
         minlength: 6,
-        select: false // prevent accidental exposure
+        select: false
     },
     addresses: [AddressSchema],
     notificationPrefs: {
