@@ -23,7 +23,7 @@ export const getMe = async (req, res, next) => {
 // @route   PATCH /api/v1/users/me
 export const updateMe = async (req, res, next) => {
     try {
-        const allowedFields = ["phone", "addresses", "notificationPrefs", "name"];
+        const allowedFields = ["phone", "addresses", "notificationPrefs", "name", "email"];
         const updates = {};
 
         allowedFields.forEach((field) => {

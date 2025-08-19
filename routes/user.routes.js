@@ -19,6 +19,7 @@ userRouter.get("/me", authorize, getMe);
 // PATCH /api/v1/users/me → update own profile
 userRouter.patch("/me", authorize, updateMe);
 
+
 // ------------------- Admin Routes ------------------- //
 
 // GET /api/v1/users → get all users

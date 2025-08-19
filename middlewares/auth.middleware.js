@@ -22,7 +22,6 @@ export const authorize = (req, res, next) => {
             id: decoded.userId,
             role: decoded.role || "user", // default to user if not present
         };
-
         next();
     } catch (error) {
         return res.status(401).json({

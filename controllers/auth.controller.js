@@ -11,13 +11,6 @@ export const signUp = async (req, res, next) => {
         await session.withTransaction(async () => {
             const { name, email, phone, password } = req.body;
 
-            // ✅ Must provide either email or phone
-            if (!email && !phone) {
-                const err = new Error("Either email or phone is required");
-                err.statusCode = 400;
-                throw err;
-            }
-
             // Check if user already exists (optional, mongoose will also catch duplicates)
             const existingUser = await User.findOne({
                 $or: [{ email }, { phone }]
@@ -36,15 +29,10 @@ export const signUp = async (req, res, next) => {
             // Create user
             const newUser = {
                 name,
+                email,
+                phone,
                 password: hashedPassword
             };
-
-            if (email) {
-                newUser.email = email;
-            }
-            if (phone) {
-                newUser.phone = phone;
-            }
 
             const user = await User.create(
                 [newUser],
@@ -80,13 +68,6 @@ export const signIn = async (req, res, next) => {
     try {
         const { email, phone, password } = req.body;
 
-        // ✅ Must provide either email or phone
-        if (!email && !phone) {
-            const err = new Error("Email or phone is required");
-            err.statusCode = 400;
-            throw err;
-        }
-
         const query = {};
         if (email) {
             query.email = email;
@@ -96,7 +77,6 @@ export const signIn = async (req, res, next) => {
 
         // Use the dynamically built query
         const user = await User.findOne(query).select("+password");
-        // ✅ select password explicitly
 
         if (!user) {
             const error = new Error("User Not Found");
