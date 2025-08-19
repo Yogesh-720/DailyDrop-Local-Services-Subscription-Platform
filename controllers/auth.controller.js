@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { User } from "../models/user.model.js"; // ensure correct import
+import User from "../models/user.model.js"; // ensure correct import
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { JWT_EXPIRES_IN, JWT_SECRET } from "../config/env.js";
@@ -19,7 +19,10 @@ export const signUp = async (req, res, next) => {
             }
 
             // Check if user already exists (optional, mongoose will also catch duplicates)
-            const existingUser = await User.findOne({ email }).session(session);
+            const existingUser = await User.findOne({
+                $or: [{ email }, { phone }]
+            }).session(session);
+
             if (existingUser) {
                 const err = new Error("User already exists");
                 err.statusCode = 409;
@@ -31,10 +34,23 @@ export const signUp = async (req, res, next) => {
             const hashedPassword = await bcrypt.hash(password, salt);
 
             // Create user
-            const created = await User.create(
-                { name, email, password: hashedPassword },
+            const newUser = {
+                name,
+                password: hashedPassword
+            };
+
+            if (email) {
+                newUser.email = email;
+            }
+            if (phone) {
+                newUser.phone = phone;
+            }
+
+            const user = await User.create(
+                [newUser],
                 { session }
             );
+            const created = user[0];
 
             // Generate JWT
             const token = jwt.sign(
@@ -71,8 +87,17 @@ export const signIn = async (req, res, next) => {
             throw err;
         }
 
+        const query = {};
+        if (email) {
+            query.email = email;
+        } else if (phone) {
+            query.phone = phone;
+        }
+
+        // Use the dynamically built query
+        const user = await User.findOne(query).select("+password");
         // ✅ select password explicitly
-        const user = await User.findOne({ email }).select("+password");
+
         if (!user) {
             const error = new Error("User Not Found");
             error.statusCode = 404;
