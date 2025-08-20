@@ -158,3 +158,37 @@ export const deleteUserById = async (req, res, next) => {
         next(err);
     }
 };
+
+export const changePassword = async (req, res, next) => {
+    try {
+        const { newPassword, oldPassword } = req.body;
+
+        const user = await User.findById(req.user.id).select("+password");
+        if (!user) {
+            const err = new Error("User not found");
+            err.statusCode = 404;
+            throw err;
+        }
+
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) {
+            const err = new Error("Old password is incorrect");
+            err.statusCode = 400;
+            throw err;
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Password changed successfully",
+        });
+    }
+    catch (err) {
+        next(err);
+    }
+};
+
+
