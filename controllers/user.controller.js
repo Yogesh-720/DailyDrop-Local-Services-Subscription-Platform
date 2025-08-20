@@ -191,4 +191,36 @@ export const changePassword = async (req, res, next) => {
     }
 };
 
+export const forgotPassword = async (req, res, next) => {
+    try {
+        const {email, phone} = req.body;
+        const query = {};
 
+        if(email) query.email = email;
+        if (phone) query.phone = phone;
+
+        const user = await User.findOne(query);
+        if (!user) {
+            const err = new Error("User does not exist");
+            err.statusCode = 404;
+            throw err;
+        }
+
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+        user.resetPasswordToken = hashedToken;
+        user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+
+        await user.save({ validateBeforeSave: false });
+
+        res.status(200).json({
+            success: true,
+            message: "Password reset token generated",
+            resetToken,
+        });
+    }
+    catch (err) {
+        next(err);
+    }
+};
