@@ -1,4 +1,5 @@
 import User from "../models/user.model.js";
+import {JWT_EXPIRES_IN, JWT_SECRET} from "../config/env.js";
 
 
 // @route GET /api/v1/users/me
@@ -218,6 +219,49 @@ export const forgotPassword = async (req, res, next) => {
             success: true,
             message: "Password reset token generated",
             resetToken,
+        });
+    }
+    catch (err) {
+        next(err);
+    }
+};
+
+export const resetPassword = async (req, res, next) => {
+    try {
+        const {resetToken} = req.params;
+        const { newPassword } = req.body;
+
+        const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpire: { $gt: Date.now() },
+        }).select("+password");
+
+        if (!user) {
+            const err = new Error("Invalid or expired reset token");
+            err.statusCode = 400;
+            throw err;
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+
+        await user.save();
+
+        const authToken = await jwt.sign(
+            { userId: user._id, role: user.role },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        res.json({
+            success: true,
+            message: "Password reset successfully",
+            authToken: authToken
         });
     }
     catch (err) {
