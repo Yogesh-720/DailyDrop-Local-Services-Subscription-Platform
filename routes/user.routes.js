@@ -5,13 +5,12 @@ import {
     getAllUsers,
     getUserById,
     updateUserById,
-    deleteUserById, deleteMe
+    deleteUserById, deleteMe, changePassword
 } from "../controllers/user.controller.js";
 import { authorize, authorizeAdmin } from "../middlewares/auth.middleware.js";
 
 const userRouter = Router();
 
-// ------------------- Normal User ------------------- //
 
 // GET /api/v1/users/me → get own profile
 userRouter.get("/me", authorize, getMe);
@@ -23,7 +22,15 @@ userRouter.patch("/me", authorize, updateMe);
 userRouter.delete("/me", authorize, deleteMe);
 
 
-// ------------------- Admin Routes ------------------- //
+// PATCH /api/v1/users/me/change-password
+userRouter.patch("/me/change-password", authorize, changePassword);
+
+// POST /api/v1/users/forgot-password
+userRouter.post("/forgot-password", forgotPassword);
+
+// POST /api/v1/users/reset-password/:token
+userRouter.post("/reset-password/:token", resetPassword);
+
 
 // GET /api/v1/users → get all users
 userRouter.get("/", authorize, authorizeAdmin, getAllUsers);
