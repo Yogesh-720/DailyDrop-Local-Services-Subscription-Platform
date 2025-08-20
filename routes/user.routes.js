@@ -5,7 +5,7 @@ import {
     getAllUsers,
     getUserById,
     updateUserById,
-    deleteUserById, deleteMe, changePassword
+    deleteUserById, deleteMe, changePassword, forgotPassword
 } from "../controllers/user.controller.js";
 import { authorize, authorizeAdmin } from "../middlewares/auth.middleware.js";
 
@@ -29,7 +29,7 @@ userRouter.patch("/me/change-password", authorize, changePassword);
 userRouter.post("/forgot-password", forgotPassword);
 
 // POST /api/v1/users/reset-password/:token
-userRouter.post("/reset-password/:token", resetPassword);
+userRouter.post("/reset-password/:resetToken", resetPassword);
 
 
 // GET /api/v1/users → get all users
