@@ -5,7 +5,7 @@ import {
     getAllUsers,
     getUserById,
     updateUserById,
-    deleteUserById, deleteMe, changePassword, forgotPassword
+    deleteUserById, deleteMe, changePassword, forgotPassword, resetPassword
 } from "../controllers/user.controller.js";
 import { authorize, authorizeAdmin } from "../middlewares/auth.middleware.js";
 

@@ -178,8 +178,7 @@ export const changePassword = async (req, res, next) => {
             throw err;
         }
 
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(newPassword, salt);
+        user.password = newPassword;
         await user.save();
 
         res.status(200).json({
@@ -244,14 +243,11 @@ export const resetPassword = async (req, res, next) => {
             throw err;
         }
 
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(newPassword, salt);
-
+        user.password = newPassword;
         user.resetPasswordToken = undefined;
         user.resetPasswordExpire = undefined;
 
         await user.save();
-
         const authToken = await jwt.sign(
             { userId: user._id, role: user.role },
             JWT_SECRET,

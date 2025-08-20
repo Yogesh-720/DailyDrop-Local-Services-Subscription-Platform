@@ -11,7 +11,7 @@ export const signUp = async (req, res, next) => {
         await session.withTransaction(async () => {
             const { name, email, phone, password } = req.body;
 
-            // Check if user already exists (optional, mongoose will also catch duplicates)
+            // Check if user already exists
             const existingUser = await User.findOne({
                 $or: [{ email }, { phone }]
             }).session(session);
@@ -22,32 +22,23 @@ export const signUp = async (req, res, next) => {
                 throw err;
             }
 
-            // Hash password
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
-
-            // Create user
-            const newUser = {
+            const user = new User({
                 name,
                 email,
                 phone,
-                password: hashedPassword
-            };
+                password
+            });
 
-            const user = await User.create(
-                [newUser],
-                { session }
-            );
-            const created = user[0];
+            await user.save({ session });
 
             // Generate JWT
             const token = jwt.sign(
-                { userId: created._id, role: created.role },
+                { userId: user._id, role: user.role },
                 JWT_SECRET,
                 { expiresIn: JWT_EXPIRES_IN }
             );
 
-            const userToSend = created.toObject();
+            const userToSend = user.toObject();
             delete userToSend.password;
 
             res.status(201).json({
@@ -62,6 +53,7 @@ export const signUp = async (req, res, next) => {
         session.endSession();
     }
 };
+
 
 // ================== SIGN IN ==================
 export const signIn = async (req, res, next) => {
