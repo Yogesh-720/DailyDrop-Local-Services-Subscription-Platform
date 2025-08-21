@@ -2,12 +2,25 @@ import Service from "../models/service.model.js";
 
 export const getAllServices = async (req, res, next) => {
     try {
-        const services = await Service.find();
+        const { isActive, frequency } = req.query;
+
+        const filter = {};
+
+        if (isActive !== undefined) {
+            filter.isActive = isActive === "true";
+        }
+
+        if (frequency) {
+            filter.frequencies = frequency;
+        }
+
+        const services = await Service.find(filter);
+
         res.status(200).json({
             success: true,
             count: services.length,
-            data: services,
-        })
+            data: services.map(s => s.showPublic()),
+        });
     }
     catch (error) {
         next(error)
@@ -33,6 +46,28 @@ export const getServiceById = async (req,res,next) => {
         next(error)
     }
 }
+
+export const searchServices = async (req, res, next) => {
+    try {
+        const { name } = req.query;
+        if (!name) {
+            return res.status(400).json({ success: false, message: "Name query is required" });
+        }
+
+        // Case-insensitive partial match
+        const services = await Service.find({
+            name: { $regex: name, $options: "i" }
+        });
+
+        res.status(200).json({
+            success: true,
+            count: services.length,
+            data: services,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
 
 export const createService = async (req, res, next) => {
     try {
