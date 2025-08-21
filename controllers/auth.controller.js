@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
-import User from "../models/user.model.js"; // ensure correct import
+import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { JWT_EXPIRES_IN, JWT_SECRET } from "../config/env.js";
+import crypto from "crypto";
 
 // ================== SIGN UP ==================
 export const signUp = async (req, res, next) => {
@@ -22,29 +23,28 @@ export const signUp = async (req, res, next) => {
                 throw err;
             }
 
+            const verifyToken = crypto.randomBytes(32).toString("hex");
+            const hashedToken = crypto.createHash("sha256").update(verifyToken).digest("hex");
+
             const user = new User({
                 name,
                 email,
                 phone,
-                password
+                password,
+                emailVerificationToken: hashedToken,
+                emailVerificationExpire: Date.now() + 15 * 60 * 1000
             });
 
             await user.save({ session });
 
-            // Generate JWT
-            const token = jwt.sign(
-                { userId: user._id, role: user.role },
-                JWT_SECRET,
-                { expiresIn: JWT_EXPIRES_IN }
-            );
 
             const userToSend = user.toObject();
             delete userToSend.password;
 
             res.status(201).json({
                 success: true,
-                message: "User created successfully",
-                data: { token, user: userToSend },
+                message: "User created successfully. Please verify you mail.",
+                data: { verifyToken, user: userToSend },
             });
         });
     } catch (err) {
@@ -99,6 +99,37 @@ export const signIn = async (req, res, next) => {
             data: { token, user: userToSend },
         });
     } catch (err) {
+        next(err);
+    }
+};
+
+export const verifyEmail = async (req, res, next) => {
+    try {
+        const {verifyToken} = re.params;
+        const hashedToken = crypto.createHash("sha256").update(verifyToken).digest("hex");
+
+        const user = await User.findOne({
+            emailVerificationToken: hashedToken,
+            emailVerificationExpire: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            const error = new Error("Invalid or expired verification token");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        user.isEmailVerified = true;
+        user.emailVerificationToken = undefined;
+        user.emailVerificationExpire = undefined;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Email verified successfully!",
+        });
+    }
+    catch (err) {
         next(err);
     }
 };

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { signIn, signOut, signUp } from "../controllers/auth.controller.js";
+import {signIn, signOut, signUp, verifyEmail} from "../controllers/auth.controller.js";
 
 const authRouter = Router();
 
@@ -11,5 +11,7 @@ authRouter.post('/signin', signIn);
 
 // POST /api/v1/auth/signout
 authRouter.post('/signout', signOut);
+
+authRouter.get("/verify-mail/:verifyToken", verifyEmail);
 
 export default authRouter;
