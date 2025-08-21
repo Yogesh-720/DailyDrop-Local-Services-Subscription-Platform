@@ -54,7 +54,6 @@ export const searchServices = async (req, res, next) => {
             return res.status(400).json({ success: false, message: "Name query is required" });
         }
 
-        // Case-insensitive partial match
         const services = await Service.find({
             name: { $regex: name, $options: "i" }
         });
@@ -153,6 +152,90 @@ export const deleteService = async (req,res,next) => {
         next(error);
     }
 }
+
+const toggleServiceStatus = async (req, res, next, status) => {
+    try {
+        const { id } = req.params;
+        const service = await Service.findByIdAndUpdate(
+            id,
+            { isActive: status },
+            { new: true }
+        );
+
+        if (!service) {
+            const err = new Error("Service not found");
+            err.statusCode = 404;
+            throw err;
+
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Service ${status ? "activated" : "deactivated"} successfully`,
+            data: service.showPublic?.() ?? service
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const deactivateService = (req, res, next) =>
+    toggleServiceStatus(req, res, next, false);
+
+export const activateService = (req, res, next) =>
+    toggleServiceStatus(req, res, next, true);
+
+
+
+export const bulkCreateServices = async (req, res, next) => {
+    try {
+        const services = req.body.services; // expect array of service objects
+
+        if (!Array.isArray(services) || services.length === 0) {
+            const err = new Error("Services array required");
+            err.statusCode = 400;
+            throw err;
+        }
+
+        const created = await Service.insertMany(services, { ordered: false });
+
+        res.status(201).json({
+            success: true,
+            count: created.length,
+            data: created.map(s => s.showPublic?.() ?? s)
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+export const bulkUpdateServices = async (req, res, next) => {
+    try {
+        const { updates } = req.body;
+
+        if (!Array.isArray(updates) || updates.length === 0) {
+            const err = new Error("Updates array required");
+            err.statusCode = 400;
+            throw err;
+        }
+
+        const results = await Promise.all(
+            updates.map(update =>
+                Service.findByIdAndUpdate(update.id, update, { new: true })
+            )
+        );
+
+        res.status(200).json({
+            success: true,
+            count: results.filter(Boolean).length,
+            data: results.filter(Boolean).map(s => s.showPublic?.() ?? s)
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 
 export const seedServices = async (req, res, next) => {
     try {
