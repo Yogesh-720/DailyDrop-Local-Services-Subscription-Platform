@@ -11,7 +11,6 @@ import { authorize, authorizeAdmin } from "../middlewares/auth.middleware.js";
 
 const userRouter = Router();
 
-
 // GET /api/v1/users/me → get own profile
 userRouter.get("/me", authorize, getMe);
 

@@ -38,13 +38,10 @@ export const signUp = async (req, res, next) => {
             await user.save({ session });
 
 
-            const userToSend = user.toObject();
-            delete userToSend.password;
-
             res.status(201).json({
                 success: true,
                 message: "User created successfully. Please verify you mail.",
-                data: { verifyToken, user: userToSend },
+                data: { verifyToken, user: user.getPublicProfile() },
             });
         });
     } catch (err) {
@@ -56,7 +53,7 @@ export const signUp = async (req, res, next) => {
 
 export const verifyEmail = async (req, res, next) => {
     try {
-        const {verifyToken} = re.params;
+        const {verifyToken} = req.params;
         const hashedToken = crypto.createHash("sha256").update(verifyToken).digest("hex");
 
         const user = await User.findOne({
@@ -100,6 +97,12 @@ export const signIn = async (req, res, next) => {
             throw error;
         }
 
+        if(!user.isEmailVerified){
+            const error = new Error("Please verify your email first...");
+            error.statusCode = 403;
+            throw error;
+        }
+
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             const error = new Error("Invalid Password");
@@ -112,12 +115,12 @@ export const signIn = async (req, res, next) => {
             const hashedOTP = await bcrypt.hash(otp, 10);
 
             user.phoneOTP = hashedOTP;
-            user.phoneOTPExpire = Date.now() + 30 * 1000;
+            user.phoneOTPExpire = Date.now() + 60 * 1000;
             await user.save();
 
             return res.status(200).json({
                 success: true,
-                message: "OTP sent to phone, valid for 30 seconds.",
+                message: "OTP sent to phone, valid for 60 seconds.",
                 phoneOTP: otp
             });
         }
@@ -128,13 +131,10 @@ export const signIn = async (req, res, next) => {
             { expiresIn: JWT_EXPIRES_IN }
         );
 
-        const userToSend = user.toObject();
-        delete userToSend.password;
-
         res.status(200).json({
             success: true,
             message: "User logged in successfully",
-            data: { token, user: userToSend },
+            data: { token, user: user.getPublicProfile() },
         });
     } catch (err) {
         next(err);
@@ -143,7 +143,7 @@ export const signIn = async (req, res, next) => {
 
 export const verifyPhone = async (req, res, next) => {
     try {
-        const { phone, otp } = req.body;
+        const { phone,otp } = req.body;
 
         const user = await User.findOne({ phone });
         if (!user || !user.phoneOTP || !user.phoneOTPExpire) {
@@ -166,13 +166,10 @@ export const verifyPhone = async (req, res, next) => {
 
         const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
-        const userToSend = user.toObject();
-        delete userToSend.password;
-
         res.json({
             success: true,
             message: "Phone verified successfully, login complete",
-            data: {token, user: userToSend},
+            data: {token, user: user.getPublicProfile() },
         });
 
     } catch (err) {

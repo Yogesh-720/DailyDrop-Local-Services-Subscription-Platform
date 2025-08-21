@@ -79,6 +79,15 @@ UserSchema.pre('save', async function(next) {
     next();
 });
 
+UserSchema.methods.getPublicProfile = function () {
+    return {
+        name: this.name,
+        email: this.email,
+        phone: this.phone,
+        role: this.role,
+    };
+};
+
 const User = mongoose.model('User', UserSchema);
 
 export default User;
