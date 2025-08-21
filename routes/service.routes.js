@@ -5,14 +5,12 @@ import {
     createService,
     updateService,
     deleteService,
-    seedServices,
+    seedServices, searchServices,
 } from "../controllers/service.controller.js";
 import { authorize, authorizeAdmin } from "../middlewares/auth.middleware.js";
 
 const serviceRouter = Router();
 
-
-// ------------------- User Routes ------------------- //
 
 // GET /api/v1/services → list all services
 serviceRouter.get("/", authorize, getAllServices);
@@ -20,7 +18,8 @@ serviceRouter.get("/", authorize, getAllServices);
 // GET /api/v1/services/:id → get service details
 serviceRouter.get("/:id", authorize, getServiceById);
 
-// ------------------- Admin Routes ------------------- //
+// GET /api/v1/services/search?name=Milk → search by name
+serviceRouter.get("/search", authorize, searchServices);
 
 // POST /api/v1/services → create new service
 serviceRouter.post("/", authorize, authorizeAdmin, createService);
