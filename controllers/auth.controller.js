@@ -54,55 +54,6 @@ export const signUp = async (req, res, next) => {
     }
 };
 
-
-// ================== SIGN IN ==================
-export const signIn = async (req, res, next) => {
-    try {
-        const { email, phone, password } = req.body;
-
-        const query = {};
-        if (email) {
-            query.email = email;
-        } else if (phone) {
-            query.phone = phone;
-        }
-
-        // Use the dynamically built query
-        const user = await User.findOne(query).select("+password");
-
-        if (!user) {
-            const error = new Error("User Not Found");
-            error.statusCode = 404;
-            throw error;
-        }
-
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-            const error = new Error("Invalid Password");
-            error.statusCode = 401;
-            throw error;
-        }
-
-        // Generate JWT
-        const token = jwt.sign(
-            { userId: user._id, role: user.role },
-            JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
-        );
-
-        const userToSend = user.toObject();
-        delete userToSend.password;
-
-        res.status(200).json({
-            success: true,
-            message: "User logged in successfully",
-            data: { token, user: userToSend },
-        });
-    } catch (err) {
-        next(err);
-    }
-};
-
 export const verifyEmail = async (req, res, next) => {
     try {
         const {verifyToken} = re.params;
@@ -133,6 +84,103 @@ export const verifyEmail = async (req, res, next) => {
         next(err);
     }
 };
+
+
+// ================== SIGN IN ==================
+export const signIn = async (req, res, next) => {
+    try {
+        const { phone, password } = req.body;
+
+        // Use the dynamically built query
+        const user = await User.findOne({phone}).select("+password");
+
+        if (!user) {
+            const error = new Error("User Not Found");
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            const error = new Error("Invalid Password");
+            error.statusCode = 401;
+            throw error;
+        }
+
+        if (!user.isPhoneVerified) {
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const hashedOTP = await bcrypt.hash(otp, 10);
+
+            user.phoneOTP = hashedOTP;
+            user.phoneOTPExpire = Date.now() + 30 * 1000;
+            await user.save();
+
+            return res.status(200).json({
+                success: true,
+                message: "OTP sent to phone, valid for 30 seconds.",
+                phoneOTP: otp
+            });
+        }
+
+        const token = jwt.sign(
+            { userId: user._id, role: user.role },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        const userToSend = user.toObject();
+        delete userToSend.password;
+
+        res.status(200).json({
+            success: true,
+            message: "User logged in successfully",
+            data: { token, user: userToSend },
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const verifyPhone = async (req, res, next) => {
+    try {
+        const { phone, otp } = req.body;
+
+        const user = await User.findOne({ phone });
+        if (!user || !user.phoneOTP || !user.phoneOTPExpire) {
+            throw new Error("User not exists!! OTP not generated");
+        }
+
+        if (Date.now() > user.phoneOTPExpire) {
+            throw new Error("OTP expired");
+        }
+
+        const isMatch = await bcrypt.compare(otp, user.phoneOTP);
+        if (!isMatch) {
+            throw new Error("Invalid OTP");
+        }
+
+        user.isPhoneVerified = true;
+        user.phoneOTP = undefined;
+        user.phoneOTPExpire = undefined;
+        await user.save();
+
+        const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+        const userToSend = user.toObject();
+        delete userToSend.password;
+
+        res.json({
+            success: true,
+            message: "Phone verified successfully, login complete",
+            data: {token, user: userToSend},
+        });
+
+    } catch (err) {
+        next(err);
+    }
+};
+
+
 
 // ================== SIGN OUT ==================
 export const signOut = async (req, res, next) => {

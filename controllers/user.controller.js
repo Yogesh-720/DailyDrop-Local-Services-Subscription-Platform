@@ -1,6 +1,8 @@
 import User from "../models/user.model.js";
 import {JWT_EXPIRES_IN, JWT_SECRET} from "../config/env.js";
-
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import jwt from "jsonwebtoken";
 
 // @route GET /api/v1/users/me
 export const getMe = async (req, res, next) => {
