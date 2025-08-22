@@ -164,7 +164,7 @@ export const verifyPhone = async (req, res, next) => {
         user.phoneOTPExpire = undefined;
         await user.save();
 
-        const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+        const token = jwt.sign({ userId: user._id , role: user.role}, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
         res.json({
             success: true,
